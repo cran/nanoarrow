@@ -1,6 +1,6 @@
 Package: nanoarrow
 Title: Interface to the 'nanoarrow' 'C' Library
-Version: 0.1.0.1
+Version: 0.1.0.2
 Authors@R: c(
     person(given = "Dewey",
            family = "Dunnington",
@@ -26,10 +26,10 @@ Suggests: arrow (>= 9.0.0), blob, hms, rlang, testthat (>= 3.0.0),
 Config/testthat/edition: 3
 Config/build/bootstrap: TRUE
 NeedsCompilation: yes
-Packaged: 2023-03-09 16:53:01 UTC; dewey
+Packaged: 2023-03-26 01:39:49 UTC; deweydunnington
 Author: Dewey Dunnington [aut, cre] (<https://orcid.org/0000-0002-9415-4582>),
   Apache Arrow [aut, cph],
   Apache Software Foundation [cph]
 Maintainer: Dewey Dunnington <dewey@dunnington.ca>
 Repository: CRAN
-Date/Publication: 2023-03-10 08:00:06 UTC
+Date/Publication: 2023-03-27 08:40:02 UTC

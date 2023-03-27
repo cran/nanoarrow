@@ -1,4 +1,4 @@
-d92a50e8fc2ec3d524bcbb4cfd630e1a *DESCRIPTION
+f6fc14a7a466924f1c54cee2d5dd95e4 *DESCRIPTION
 414dfdb7b1aeb988d09eac1d84bdbc4f *NAMESPACE
 3f4b9900b02b437eb56d26cbf22466fc *R/altrep.R
 70b3d4581862329d1367cdbdc2621653 *R/array-stream.R
@@ -39,7 +39,7 @@ af97d95abe048485a1f4c5189029b6ce *src/altrep.c
 93a8e87aa0baabfcea2be1ce9d48c335 *src/array_stream.h
 0de02b9f76f3078c0ae0150dee568913 *src/array_view.c
 dfa2a2fc192f4eaeddb389550b577e10 *src/array_view.h
-9e38c2d0a4d8e60e9c74acf0d33a0945 *src/as_array.c
+99ed8c926eec2fee85e1064be72a9d75 *src/as_array.c
 db9893285900c13185697fa2d779bb27 *src/buffer.c
 e9f738632485f412ffe06c1149239b57 *src/buffer.h
 46abbfd37e5087846a8725b8cac97e43 *src/convert.c
@@ -75,10 +75,10 @@ a78f805c4c8406d9012eb5ad2aada4e4 *tests/testthat.R
 cdd56d9d91a8dfe2c7b9ae346ed7e1d8 *tests/testthat/test-altrep.R
 b44a1215e26b99a261fd4205a6cc28db *tests/testthat/test-array-stream.R
 85aa4fdd102291f65c4e77312adec048 *tests/testthat/test-array.R
-109a675cdb6466cae89c0ef9ae5dfa23 *tests/testthat/test-as-array.R
+5f739a663bd6e0cd230c86031e0f3424 *tests/testthat/test-as-array.R
 93b0f2d48143995fb29e7b3958226986 *tests/testthat/test-buffer.R
 678f1f09a59e7f4dfa2244659d58b793 *tests/testthat/test-convert-array-stream.R
-84fade0a2d73c40c4c625d28ec63f1d4 *tests/testthat/test-convert-array.R
+fc9fc83140ee907a796da3498972b689 *tests/testthat/test-convert-array.R
 676dcc59f1ccfa5547a5d7ad5f5196e3 *tests/testthat/test-infer-ptype.R
 5d03084abff7f7f929713b591aa216ee *tests/testthat/test-nanoarrow-package.R
 ef048de4c83016f691bfb29035bcac88 *tests/testthat/test-pkg-arrow.R

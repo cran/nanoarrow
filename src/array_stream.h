@@ -24,6 +24,7 @@
 #include "nanoarrow.h"
 #include "util.h"
 
+void run_user_array_stream_finalizer(SEXP array_stream_xptr);
 void finalize_array_stream_xptr(SEXP array_stream_xptr);
 
 // Returns the underlying struct ArrowSchema* from an external pointer,
@@ -60,5 +61,8 @@ static inline SEXP array_stream_owning_xptr(void) {
   UNPROTECT(1);
   return array_stream_xptr;
 }
+
+void array_stream_export(SEXP array_stream_xptr,
+                         struct ArrowArrayStream* array_stream_copy);
 
 #endif

@@ -96,21 +96,22 @@ SEXP nanoarrow_c_pointer_is_valid(SEXP ptr) {
 SEXP nanoarrow_c_pointer_release(SEXP ptr) {
   if (Rf_inherits(ptr, "nanoarrow_schema")) {
     struct ArrowSchema* obj = (struct ArrowSchema*)R_ExternalPtrAddr(ptr);
-    if (Rf_ScalarLogical(obj != NULL && obj->release != NULL)) {
+    if (obj != NULL && obj->release != NULL) {
       obj->release(obj);
       obj->release = NULL;
     }
   } else if (Rf_inherits(ptr, "nanoarrow_array")) {
     struct ArrowArray* obj = (struct ArrowArray*)R_ExternalPtrAddr(ptr);
-    if (Rf_ScalarLogical(obj != NULL && obj->release != NULL)) {
+    if (obj != NULL && obj->release != NULL) {
       obj->release(obj);
       obj->release = NULL;
     }
   } else if (Rf_inherits(ptr, "nanoarrow_array_stream")) {
     struct ArrowArrayStream* obj = (struct ArrowArrayStream*)R_ExternalPtrAddr(ptr);
-    if (Rf_ScalarLogical(obj != NULL && obj->release != NULL)) {
+    if (obj != NULL && obj->release != NULL) {
       obj->release(obj);
       obj->release = NULL;
+      run_user_array_stream_finalizer(ptr);
     }
   } else {
     Rf_error(
@@ -183,6 +184,8 @@ SEXP nanoarrow_c_pointer_move(SEXP ptr_src, SEXP ptr_dst) {
   // also move SEXP dependencies
   R_SetExternalPtrProtected(ptr_dst, R_ExternalPtrProtected(xptr_src));
   R_SetExternalPtrTag(ptr_dst, R_ExternalPtrTag(xptr_src));
+  R_SetExternalPtrProtected(xptr_src, R_NilValue);
+  R_SetExternalPtrTag(xptr_src, R_NilValue);
 
   UNPROTECT(1);
   return R_NilValue;
@@ -236,5 +239,37 @@ SEXP nanoarrow_c_export_array(SEXP array_xptr, SEXP ptr_dst) {
 
   array_export(array_xptr, obj_dst);
   UNPROTECT(1);
+  return R_NilValue;
+}
+
+SEXP nanoarrow_c_export_array_stream(SEXP array_stream_xptr, SEXP ptr_dst) {
+  SEXP xptr_dst = PROTECT(nanoarrow_c_pointer(ptr_dst));
+
+  struct ArrowArrayStream* obj_dst =
+      (struct ArrowArrayStream*)R_ExternalPtrAddr(xptr_dst);
+  if (obj_dst == NULL) {
+    Rf_error("`ptr_dst` is a pointer to NULL");
+  }
+
+  if (obj_dst->release != NULL) {
+    Rf_error("`ptr_dst` is a valid struct ArrowArrayStream");
+  }
+
+  array_stream_export(array_stream_xptr, obj_dst);
+
+  // Remove SEXP dependencies (if important they are kept alive by array_stream_export)
+  R_SetExternalPtrProtected(array_stream_xptr, R_NilValue);
+  R_SetExternalPtrTag(array_stream_xptr, R_NilValue);
+
+  UNPROTECT(1);
+  return R_NilValue;
+}
+
+SEXP nanoarrow_c_pointer_set_protected(SEXP ptr_src, SEXP protected_sexp) {
+  if (R_ExternalPtrProtected(ptr_src) != R_NilValue) {
+    Rf_error("External pointer protected value has already been set");
+  }
+
+  R_SetExternalPtrProtected(ptr_src, protected_sexp);
   return R_NilValue;
 }

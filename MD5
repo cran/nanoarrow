@@ -1,9 +1,9 @@
-742d615e63967dc5f57475bb576ce634 *DESCRIPTION
+734566828061a6328fd8bb3279f9edf6 *DESCRIPTION
 1796f2c0bc6275a80387813fa71a7740 *NAMESPACE
-39a6a0629a9e24c4f48b4281d4d9de59 *NEWS.md
+0d7eb661eeb11a1de6cdfff38db21d4e *NEWS.md
 3f4b9900b02b437eb56d26cbf22466fc *R/altrep.R
 39a90d7567b07f138ca33d62c0f31627 *R/array-stream.R
-c03ae03d0a7fdf277797b96402fa3927 *R/array.R
+966c63d6fe83a3ab18e488de95d27287 *R/array.R
 922fcef21f8f4395761ffdc9d277c9b8 *R/as-array.R
 0886fe4d41e6936721adb177e2c8dec0 *R/buffer.R
 6731943f8fc5a5db9a5571c95de7909f *R/convert-array-stream.R
@@ -16,12 +16,12 @@ f1d0357e009ac2ace185c47013f226d0 *R/pkg-arrow.R
 41b0796594fbbce7d98b3485255be06a *R/type.R
 cde398500291b2ac19c3863fc55c5b4f *R/util.R
 d0fb1b41648c9aa6d6200bb967d1c1d4 *R/zzz.R
-e3469707c0e7cb6efb0cf7c97afb33b2 *README.md
+fd6f5cd2014ce74030a28b3f7de60c9c *README.md
 8b2fa4425ae1a44f63f0b2e6a334bbf3 *configure
 d8b3e9c52c24ff34bd0f06cbe475812d *configure.win
 be6f7e2ed6963ad47a1460ccc2832476 *inst/include/r_nanoarrow.h
 3686b577d8467347e272a6a425f7ad84 *man/array_stream_set_finalizer.Rd
-23cd76689a0847b6f2a587403020843d *man/as_nanoarrow_array.Rd
+4d587015438f353cb5b72675ae2ca659 *man/as_nanoarrow_array.Rd
 bd2f9b6181d29ed93358fb1f2d52e9dc *man/as_nanoarrow_array_stream.Rd
 d6a23e2f24251d5e404cf2d69b11e4b3 *man/as_nanoarrow_buffer.Rd
 759c9a20c5e1f3a832f1924b8b30298e *man/as_nanoarrow_schema.Rd

@@ -26,6 +26,10 @@
 
 static int nanoarrow_materialize_lgl(struct ArrayViewSlice* src, struct VectorSlice* dst,
                                      struct MaterializeOptions* options) {
+  if (src->array_view->array->dictionary != NULL) {
+    return ENOTSUP;
+  }
+
   // True for all the types supported here
   const uint8_t* is_valid = src->array_view->buffer_views[0].data.as_uint8;
   const uint8_t* data_buffer = src->array_view->buffer_views[1].data.as_uint8;
@@ -40,9 +44,8 @@ static int nanoarrow_materialize_lgl(struct ArrayViewSlice* src, struct VectorSl
       }
       break;
     case NANOARROW_TYPE_BOOL:
-      for (R_xlen_t i = 0; i < dst->length; i++) {
-        result[dst->offset + i] = ArrowBitGet(data_buffer, src->offset + i);
-      }
+      ArrowBitsUnpackInt32(data_buffer, raw_src_offset, dst->length,
+                           result + dst->offset);
 
       // Set any nulls to NA_LOGICAL
       if (is_valid != NULL && src->array_view->array->null_count != 0) {

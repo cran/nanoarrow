@@ -75,4 +75,4 @@ init %>%
   str_replace(pattern, header) %>%
   write_file("src/init.c")
 
-
+system("clang-format -i src/init.c")

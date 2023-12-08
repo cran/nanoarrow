@@ -1,6 +1,6 @@
-6b6bc8ec4f8915cf010f883fcf8aac5e *DESCRIPTION
+d64867e1390d21d22dc44db153037867 *DESCRIPTION
 19ce1e140333c7a274db64de53b5f6dd *NAMESPACE
-03e8f32ebdf758c4eb14d0564744768f *NEWS.md
+ddf472eb9fabb9c11319b6edbbe391ed *NEWS.md
 3f4b9900b02b437eb56d26cbf22466fc *R/altrep.R
 39a90d7567b07f138ca33d62c0f31627 *R/array-stream.R
 966c63d6fe83a3ab18e488de95d27287 *R/array.R
@@ -45,7 +45,7 @@ af97d95abe048485a1f4c5189029b6ce *src/altrep.c
 2d48b1bb763debda602979c4ef478594 *src/altrep.h
 8da95460c7a6727ab6fb29d7db612cde *src/array.c
 0ca959d92281c167687a539aa790d1f2 *src/array.h
-7b71af77771ab7381c61ad8703740523 *src/array_stream.c
+ea472e4dab9b11b334dc34dad0668148 *src/array_stream.c
 1e49124557a017065e72ccbdfb052747 *src/array_stream.h
 0de02b9f76f3078c0ae0150dee568913 *src/array_view.c
 10f66cefa23bfd607ec8c2f8f18ebafc *src/array_view.h

@@ -17,6 +17,14 @@
   under the License.
 -->
 
+# nanoarrow 0.4.0
+
+- Fix source links from pkgdown site (#315).
+- Provide LinkingTo headers for extension packages (#332).
+- Add more `nanoarrow_array_stream` generics (#349).
+- Add conversion from integer type to `character()` (#345).
+- Ensure simple `list()`s can be converted without arrow installed (#344).
+
 # nanoarrow 0.3.0.1
 
 - Ensure wrapper array stream eagerly releases the wrapped array stream (#333).

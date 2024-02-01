@@ -23,22 +23,11 @@
 #include "schema.h"
 #include "util.h"
 
-void finalize_schema_xptr(SEXP schema_xptr) {
-  struct ArrowSchema* schema = (struct ArrowSchema*)R_ExternalPtrAddr(schema_xptr);
-  if (schema != NULL && schema->release != NULL) {
-    schema->release(schema);
-  }
-
-  if (schema != NULL) {
-    ArrowFree(schema);
-  }
-}
-
 SEXP nanoarrow_c_schema_init(SEXP type_id_sexp, SEXP nullable_sexp) {
   int type_id = INTEGER(type_id_sexp)[0];
-  SEXP schema_xptr = PROTECT(schema_owning_xptr());
+  SEXP schema_xptr = PROTECT(nanoarrow_schema_owning_xptr());
+  struct ArrowSchema* schema = nanoarrow_output_schema_from_xptr(schema_xptr);
 
-  struct ArrowSchema* schema = (struct ArrowSchema*)R_ExternalPtrAddr(schema_xptr);
   int result = ArrowSchemaInitFromType(schema, type_id);
   if (result != NANOARROW_OK) {
     Rf_error("ArrowSchemaInitFromType() failed");
@@ -69,9 +58,9 @@ SEXP nanoarrow_c_schema_init_date_time(SEXP type_id_sexp, SEXP time_unit_sexp,
     timezone = NULL;
   }
 
-  SEXP schema_xptr = PROTECT(schema_owning_xptr());
+  SEXP schema_xptr = PROTECT(nanoarrow_schema_owning_xptr());
+  struct ArrowSchema* schema = nanoarrow_output_schema_from_xptr(schema_xptr);
 
-  struct ArrowSchema* schema = (struct ArrowSchema*)R_ExternalPtrAddr(schema_xptr);
   ArrowSchemaInit(schema);
   int result = ArrowSchemaSetTypeDateTime(schema, type_id, time_unit, timezone);
   if (result != NANOARROW_OK) {
@@ -97,9 +86,9 @@ SEXP nanoarrow_c_schema_init_decimal(SEXP type_id_sexp, SEXP precision_sexp,
   int precision = INTEGER(precision_sexp)[0];
   int scale = INTEGER(scale_sexp)[0];
 
-  SEXP schema_xptr = PROTECT(schema_owning_xptr());
+  SEXP schema_xptr = PROTECT(nanoarrow_schema_owning_xptr());
+  struct ArrowSchema* schema = nanoarrow_output_schema_from_xptr(schema_xptr);
 
-  struct ArrowSchema* schema = (struct ArrowSchema*)R_ExternalPtrAddr(schema_xptr);
   ArrowSchemaInit(schema);
   int result = ArrowSchemaSetTypeDecimal(schema, type_id, precision, scale);
   if (result != NANOARROW_OK) {
@@ -124,9 +113,9 @@ SEXP nanoarrow_c_schema_init_fixed_size(SEXP type_id_sexp, SEXP fixed_size_sexp,
   int type_id = INTEGER(type_id_sexp)[0];
   int fixed_size = INTEGER(fixed_size_sexp)[0];
 
-  SEXP schema_xptr = PROTECT(schema_owning_xptr());
+  SEXP schema_xptr = PROTECT(nanoarrow_schema_owning_xptr());
+  struct ArrowSchema* schema = nanoarrow_output_schema_from_xptr(schema_xptr);
 
-  struct ArrowSchema* schema = (struct ArrowSchema*)R_ExternalPtrAddr(schema_xptr);
   ArrowSchemaInit(schema);
   int result = ArrowSchemaSetTypeFixedSize(schema, type_id, fixed_size);
   if (result != NANOARROW_OK) {
@@ -152,7 +141,11 @@ static SEXP schema_metadata_to_list(const char* metadata) {
   }
 
   struct ArrowMetadataReader reader;
-  ArrowMetadataReaderInit(&reader, metadata);
+  int result = ArrowMetadataReaderInit(&reader, metadata);
+  if (result != NANOARROW_OK) {
+    Rf_error("ArrowMetadataReaderInit() failed");
+  }
+
   SEXP names = PROTECT(Rf_allocVector(STRSXP, reader.remaining_keys));
   SEXP values = PROTECT(Rf_allocVector(VECSXP, reader.remaining_keys));
 
@@ -160,8 +153,12 @@ static SEXP schema_metadata_to_list(const char* metadata) {
   struct ArrowStringView value;
   R_xlen_t i = 0;
   while (reader.remaining_keys > 0) {
-    ArrowMetadataReaderRead(&reader, &key, &value);
-    SET_STRING_ELT(names, i, Rf_mkCharLenCE(key.data, key.size_bytes, CE_UTF8));
+    result = ArrowMetadataReaderRead(&reader, &key, &value);
+    if (result != NANOARROW_OK) {
+      Rf_error("ArrowMetadataReaderRead() failed");
+    }
+
+    SET_STRING_ELT(names, i, Rf_mkCharLenCE(key.data, (int)key.size_bytes, CE_UTF8));
     SEXP value_raw = PROTECT(Rf_allocVector(RAWSXP, value.size_bytes));
     memcpy(RAW(value_raw), value.data, value.size_bytes);
     SET_VECTOR_ELT(values, i, value_raw);
@@ -182,12 +179,12 @@ static SEXP borrow_schema_xptr(struct ArrowSchema* schema, SEXP shelter) {
 }
 
 SEXP borrow_schema_child_xptr(SEXP schema_xptr, int64_t i) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_xptr);
   return borrow_schema_xptr(schema->children[i], schema_xptr);
 }
 
 SEXP nanoarrow_c_schema_to_list(SEXP schema_xptr) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_xptr);
 
   const char* names[] = {"format",   "name",       "metadata", "flags",
                          "children", "dictionary", ""};
@@ -208,7 +205,7 @@ SEXP nanoarrow_c_schema_to_list(SEXP schema_xptr) {
   }
 
   SET_VECTOR_ELT(result, 2, schema_metadata_to_list(schema->metadata));
-  SET_VECTOR_ELT(result, 3, Rf_ScalarInteger(schema->flags));
+  SET_VECTOR_ELT(result, 3, Rf_ScalarInteger((int)schema->flags));
 
   if (schema->n_children > 0) {
     SEXP children_sexp = PROTECT(Rf_allocVector(VECSXP, schema->n_children));
@@ -248,7 +245,7 @@ static SEXP mkStringView(struct ArrowStringView* view) {
     return R_NilValue;
   }
 
-  SEXP chr = PROTECT(Rf_mkCharLenCE(view->data, view->size_bytes, CE_UTF8));
+  SEXP chr = PROTECT(Rf_mkCharLenCE(view->data, (int)view->size_bytes, CE_UTF8));
   SEXP str = PROTECT(Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(str, 0, chr);
   UNPROTECT(2);
@@ -256,7 +253,7 @@ static SEXP mkStringView(struct ArrowStringView* view) {
 }
 
 SEXP nanoarrow_c_schema_parse(SEXP schema_xptr) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_xptr);
 
   struct ArrowSchemaView schema_view;
   struct ArrowError error;
@@ -314,7 +311,7 @@ SEXP nanoarrow_c_schema_parse(SEXP schema_xptr) {
       schema_view.type == NANOARROW_TYPE_SPARSE_UNION) {
     int8_t type_ids[128];
     int num_type_ids = _ArrowParseUnionTypeIds(schema_view.union_type_ids, type_ids);
-    if (num_type_ids == -1) {
+    if (num_type_ids == -1 || num_type_ids > 127) {
       Rf_error("Invalid type IDs in union type: '%s'", schema_view.union_type_ids);
     }
 
@@ -344,19 +341,24 @@ SEXP nanoarrow_c_schema_format(SEXP schema_xptr, SEXP recursive_sexp) {
 
   struct ArrowSchema* schema = (struct ArrowSchema*)R_ExternalPtrAddr(schema_xptr);
 
-  int64_t size_needed = ArrowSchemaToString(schema, NULL, 0, recursive);
+  int64_t size_needed = ArrowSchemaToString(schema, NULL, 0, recursive != 0);
+  if (size_needed >= INT_MAX) {
+    size_needed = INT_MAX - 1;
+  }
+
   // Using an SEXP because Rf_mkCharLenCE could jump
   SEXP formatted_sexp = PROTECT(Rf_allocVector(RAWSXP, size_needed + 1));
-  ArrowSchemaToString(schema, (char*)RAW(formatted_sexp), size_needed + 1, recursive);
+  ArrowSchemaToString(schema, (char*)RAW(formatted_sexp), size_needed + 1,
+                      recursive != 0);
   SEXP result_sexp = PROTECT(Rf_allocVector(STRSXP, 1));
   SET_STRING_ELT(result_sexp, 0,
-                 Rf_mkCharLenCE((char*)RAW(formatted_sexp), size_needed, CE_UTF8));
+                 Rf_mkCharLenCE((char*)RAW(formatted_sexp), (int)size_needed, CE_UTF8));
   UNPROTECT(2);
   return result_sexp;
 }
 
 SEXP nanoarrow_c_schema_set_format(SEXP schema_mut_xptr, SEXP format_sexp) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_mut_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_mut_xptr);
 
   if (TYPEOF(format_sexp) != STRSXP || Rf_length(format_sexp) != 1) {
     Rf_error("schema$format must be character(1)");
@@ -371,7 +373,7 @@ SEXP nanoarrow_c_schema_set_format(SEXP schema_mut_xptr, SEXP format_sexp) {
 }
 
 SEXP nanoarrow_c_schema_set_name(SEXP schema_mut_xptr, SEXP name_sexp) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_mut_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_mut_xptr);
   int result;
 
   if (name_sexp == R_NilValue) {
@@ -414,7 +416,7 @@ static SEXP buffer_owning_xptr(void) {
 }
 
 SEXP nanoarrow_c_schema_set_metadata(SEXP schema_mut_xptr, SEXP metadata_sexp) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_mut_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_mut_xptr);
   int result;
 
   if (Rf_xlength(metadata_sexp) == 0) {
@@ -492,7 +494,7 @@ SEXP nanoarrow_c_schema_set_metadata(SEXP schema_mut_xptr, SEXP metadata_sexp) {
 }
 
 SEXP nanoarrow_c_schema_set_flags(SEXP schema_mut_xptr, SEXP flags_sexp) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_mut_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_mut_xptr);
 
   if (TYPEOF(flags_sexp) != INTSXP || Rf_length(flags_sexp) != 1) {
     Rf_error("schema$flags must be integer(1)");
@@ -529,7 +531,7 @@ static void free_all_children(struct ArrowSchema* schema) {
 }
 
 SEXP nanoarrow_c_schema_set_children(SEXP schema_mut_xptr, SEXP children_sexp) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_mut_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_mut_xptr);
 
   release_all_children(schema);
 
@@ -556,7 +558,7 @@ SEXP nanoarrow_c_schema_set_children(SEXP schema_mut_xptr, SEXP children_sexp) {
   SEXP children_names = PROTECT(Rf_getAttrib(children_sexp, R_NamesSymbol));
 
   for (int64_t i = 0; i < schema->n_children; i++) {
-    struct ArrowSchema* child = schema_from_xptr(VECTOR_ELT(children_sexp, i));
+    struct ArrowSchema* child = nanoarrow_schema_from_xptr(VECTOR_ELT(children_sexp, i));
     result = ArrowSchemaDeepCopy(child, schema->children[i]);
     if (result != NANOARROW_OK) {
       Rf_error("Error copying new_values$children[[%ld]]", (long)i);
@@ -588,7 +590,7 @@ SEXP nanoarrow_c_schema_set_children(SEXP schema_mut_xptr, SEXP children_sexp) {
 }
 
 SEXP nanoarrow_c_schema_set_dictionary(SEXP schema_mut_xptr, SEXP dictionary_xptr) {
-  struct ArrowSchema* schema = schema_from_xptr(schema_mut_xptr);
+  struct ArrowSchema* schema = nanoarrow_schema_from_xptr(schema_mut_xptr);
 
   // If there's already a dictionary, make sure we release it
   if (schema->dictionary != NULL) {
@@ -612,7 +614,7 @@ SEXP nanoarrow_c_schema_set_dictionary(SEXP schema_mut_xptr, SEXP dictionary_xpt
       }
     }
 
-    struct ArrowSchema* dictionary = schema_from_xptr(dictionary_xptr);
+    struct ArrowSchema* dictionary = nanoarrow_schema_from_xptr(dictionary_xptr);
     result = ArrowSchemaDeepCopy(dictionary, schema->dictionary);
     if (result != NANOARROW_OK) {
       Rf_error("Error copying schema$dictionary");

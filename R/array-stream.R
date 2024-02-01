@@ -65,12 +65,15 @@ basic_array_stream <- function(batches, schema = NULL, validate = TRUE) {
 #' @param array_stream A [nanoarrow_array_stream][as_nanoarrow_array_stream]
 #' @param finalizer A function that will be called with zero arguments.
 #'
-#' @return `array_stream`, invisibly
+#' @return A newly allocated `array_stream` whose release callback will call
+#'   the supplied finalizer.
 #' @export
 #'
 #' @examples
-#' stream <- basic_array_stream(list(1:5))
-#' array_stream_set_finalizer(stream, function() message("All done!"))
+#' stream <- array_stream_set_finalizer(
+#'   basic_array_stream(list(1:5)),
+#'   function() message("All done!")
+#' )
 #' stream$release()
 #'
 array_stream_set_finalizer <- function(array_stream, finalizer) {
@@ -81,7 +84,9 @@ array_stream_set_finalizer <- function(array_stream, finalizer) {
   class(prot) <- "nanoarrow_array_stream_finalizer"
 
   nanoarrow_pointer_set_protected(array_stream, prot)
-  invisible(array_stream)
+  out <- nanoarrow_allocate_array_stream()
+  nanoarrow_pointer_export(array_stream, out)
+  out
 }
 
 #' Convert an object to a nanoarrow array_stream
@@ -130,6 +135,23 @@ as_nanoarrow_array_stream.nanoarrow_array_stream <- function(x, ..., schema = NU
   }
 
   NextMethod()
+}
+
+#' @export
+as_nanoarrow_array_stream.nanoarrow_array <- function(x, ..., schema = NULL) {
+  if (is.null(schema)) {
+    return(basic_array_stream(list(x), validate = FALSE))
+  }
+
+  inferred_schema <- infer_nanoarrow_schema(x)
+  if (nanoarrow_schema_identical(schema, inferred_schema)) {
+    return(basic_array_stream(list(x), validate = FALSE))
+  }
+
+  as_nanoarrow_array_stream(
+    as_nanoarrow_array_stream(x),
+    schema = schema
+  )
 }
 
 #' @export

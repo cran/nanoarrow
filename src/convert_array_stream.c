@@ -28,16 +28,25 @@
 
 SEXP nanoarrow_c_convert_array_stream(SEXP array_stream_xptr, SEXP ptype_sexp,
                                       SEXP size_sexp, SEXP n_sexp) {
-  struct ArrowArrayStream* array_stream = array_stream_from_xptr(array_stream_xptr);
-  double size = REAL(size_sexp)[0];
-  double n = REAL(n_sexp)[0];
+  struct ArrowArrayStream* array_stream =
+      nanoarrow_array_stream_from_xptr(array_stream_xptr);
+  int64_t size = (int64_t)(REAL(size_sexp)[0]);
 
-  SEXP schema_xptr = PROTECT(schema_owning_xptr());
-  struct ArrowSchema* schema = (struct ArrowSchema*)R_ExternalPtrAddr(schema_xptr);
-  int result = array_stream->get_schema(array_stream, schema);
+  double n_real = REAL(n_sexp)[0];
+  int n;
+  if (R_FINITE(n_real)) {
+    n = (int)n_real;
+  } else {
+    n = INT_MAX;
+  }
+
+  SEXP schema_xptr = PROTECT(nanoarrow_schema_owning_xptr());
+  struct ArrowSchema* schema = nanoarrow_output_schema_from_xptr(schema_xptr);
+
+  int result = ArrowArrayStreamGetSchema(array_stream, schema, NULL);
   if (result != NANOARROW_OK) {
     Rf_error("ArrowArrayStream::get_schema(): %s",
-             array_stream->get_last_error(array_stream));
+             ArrowArrayStreamGetLastError(array_stream));
   }
 
   SEXP converter_xptr = PROTECT(nanoarrow_converter_from_ptype(ptype_sexp));
@@ -49,17 +58,17 @@ SEXP nanoarrow_c_convert_array_stream(SEXP array_stream_xptr, SEXP ptype_sexp,
     nanoarrow_converter_stop(converter_xptr);
   }
 
-  SEXP array_xptr = PROTECT(array_owning_xptr());
-  struct ArrowArray* array = (struct ArrowArray*)R_ExternalPtrAddr(array_xptr);
+  SEXP array_xptr = PROTECT(nanoarrow_array_owning_xptr());
+  struct ArrowArray* array = nanoarrow_output_array_from_xptr(array_xptr);
 
   int64_t n_batches = 0;
   int64_t n_materialized = 0;
   if (n > 0) {
-    result = array_stream->get_next(array_stream, array);
+    result = ArrowArrayStreamGetNext(array_stream, array, NULL);
     n_batches++;
     if (result != NANOARROW_OK) {
       Rf_error("ArrowArrayStream::get_next(): %s",
-               array_stream->get_last_error(array_stream));
+               ArrowArrayStreamGetLastError(array_stream));
     }
 
     while (array->release != NULL) {
@@ -78,11 +87,11 @@ SEXP nanoarrow_c_convert_array_stream(SEXP array_stream_xptr, SEXP ptype_sexp,
       }
 
       array->release(array);
-      result = array_stream->get_next(array_stream, array);
+      result = ArrowArrayStreamGetNext(array_stream, array, NULL);
       n_batches++;
       if (result != NANOARROW_OK) {
         Rf_error("ArrowArrayStream::get_next(): %s",
-                 array_stream->get_last_error(array_stream));
+                 ArrowArrayStreamGetLastError(array_stream));
       }
     }
   }

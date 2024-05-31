@@ -1,4 +1,4 @@
-5feb1a35463197f9168016844e494e5d *DESCRIPTION
+fb06c1be8b31ed7bb9073e3d81a25239 *DESCRIPTION
 e8e0843f77f8984929584d782c118aa9 *NAMESPACE
 d8206122246b07a19284a88a40268b14 *NEWS.md
 3f4b9900b02b437eb56d26cbf22466fc *R/altrep.R
@@ -8,7 +8,7 @@ da959399c29340892a633c8f6a9b4653 *R/array-stream.R
 aaee71ec4c567db0545829812d1900ba *R/buffer.R
 5dfde2e8099afe812764b20250530f9c *R/convert-array-stream.R
 3a8f4f60ffcfd35dde96f8d8b301ea02 *R/convert-array.R
-5aa088fc926e17643f51275d90f10a5f *R/extension-vctrs.R
+1f61dcb5e13d1f104498cd10833d30b8 *R/extension-vctrs.R
 0e798a3afa1f5b0e4c9555ba1b808a99 *R/extension.R
 45d92e553cf36b96af2ead476bd121b4 *R/infer-ptype.R
 678da0f58769a3bf08e6e4a07fd4e44c *R/ipc.R
@@ -34,7 +34,7 @@ ab560cd52af1016a5aaccb5623533ec7 *man/basic_array_stream.Rd
 46525b8260de44f421c2768dff2f841c *man/infer_nanoarrow_ptype.Rd
 f07a675b459cdcf282e645af2ac6e524 *man/infer_nanoarrow_ptype_extension.Rd
 8ed2629e9e3ec693df91fd606a9ddcfa *man/na_type.Rd
-75e01324b45205813f9fadab4ca4df8f *man/na_vctrs.Rd
+2f122d625da0ee7c04fc935b25b73003 *man/na_vctrs.Rd
 b483ecffbb1f2abefd22e1ee96e1023f *man/nanoarrow-package.Rd
 ea2719b6457c3dc1b270e3ac1d8c445a *man/nanoarrow_array_init.Rd
 ead3237b06c2e034738de27f68625336 *man/nanoarrow_buffer_init.Rd
@@ -132,7 +132,7 @@ cdd56d9d91a8dfe2c7b9ae346ed7e1d8 *tests/testthat/test-altrep.R
 7401646835220a087f5fa95c788b0465 *tests/testthat/test-buffer.R
 b00603d1d72417d7e17b34ad6ee05455 *tests/testthat/test-convert-array-stream.R
 568b09d8fb764fe10810f53cab001cf2 *tests/testthat/test-convert-array.R
-5fa782ab40feda14c373e559a5566f41 *tests/testthat/test-extension-vctrs.R
+a747d2bc26b0180e233d7c233e5b6601 *tests/testthat/test-extension-vctrs.R
 ceabab0a31d2b2a7242cc89bdba0e4a2 *tests/testthat/test-extension.R
 2c0761d46c9de72bfcef7379a0ebc8a7 *tests/testthat/test-infer-ptype.R
 e9d4c1fa5974fa9278ba12628266868d *tests/testthat/test-ipc.R

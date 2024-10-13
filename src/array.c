@@ -370,13 +370,15 @@ static SEXP borrow_buffer(struct ArrowArrayView* array_view, int64_t i, SEXP she
   SEXP buffer_class = PROTECT(Rf_allocVector(STRSXP, 2));
   SET_STRING_ELT(buffer_class, 1, Rf_mkChar("nanoarrow_buffer"));
 
-  SEXP buffer_xptr =
-      PROTECT(buffer_borrowed_xptr(array_view->buffer_views[i].data.data,
-                                   array_view->buffer_views[i].size_bytes, shelter));
+  struct ArrowBufferView view = ArrowArrayViewGetBufferView(array_view, i);
+  enum ArrowBufferType buffer_type = ArrowArrayViewGetBufferType(array_view, i);
+  enum ArrowType data_type = ArrowArrayViewGetBufferDataType(array_view, i);
+  int64_t element_size_bits = ArrowArrayViewGetBufferElementSizeBits(array_view, i);
 
-  buffer_borrowed_xptr_set_type(buffer_xptr, array_view->layout.buffer_type[i],
-                                array_view->layout.buffer_data_type[i],
-                                array_view->layout.element_size_bits[i]);
+  SEXP buffer_xptr =
+      PROTECT(buffer_borrowed_xptr(view.data.data, view.size_bytes, shelter));
+
+  buffer_borrowed_xptr_set_type(buffer_xptr, buffer_type, data_type, element_size_bits);
   UNPROTECT(2);
   return buffer_xptr;
 }

@@ -1,4 +1,4 @@
-07dab9af8a4d0cc6e28b72b233a55c58 *DESCRIPTION
+33c6076557a22268260b482344a0cf56 *DESCRIPTION
 34e0201fd98a275a08b7bb8e955d5101 *NAMESPACE
 cb60ceed22cc410ad2ba70e04c3a0b7b *NEWS.md
 3f4b9900b02b437eb56d26cbf22466fc *R/altrep.R
@@ -44,8 +44,8 @@ c653c8e32b8780d91701e42109565657 *man/nanoarrow_extension_spec.Rd
 ad4e8783c1b88a84de24615fef1dd178 *man/nanoarrow_version.Rd
 e5348e67a79c8db6a39b37bb64ccef68 *man/read_nanoarrow.Rd
 48b35feb238829a1a0fce7bb09fa71e0 *src/Makevars
-f1d9b2458107adf780e435b49aa2c34f *src/altrep.c
-2d48b1bb763debda602979c4ef478594 *src/altrep.h
+d8b55df48b4e246801f909b4b046ac6e *src/altrep.c
+600708433857d4256b81d53ab14df60e *src/altrep.h
 4de101bae9efc6e416bd14eff842afe3 *src/array.c
 38269433b1f19a6ee9c93fba69aaab37 *src/array.h
 c70906d3071ab352b00a2231511e2393 *src/array_stream.c
@@ -76,7 +76,6 @@ e286dee5eb7d52175cee234bcd45da91 *src/flatcc/flatcc_portable.h
 e6f4d1f98ec01f3b0e2ebca42a19b9f5 *src/flatcc/flatcc_rtconfig.h
 85cb9cd0dc67d0d68035139e89cdb9df *src/flatcc/flatcc_types.h
 1fc8d83f128080dbe29caa3ee42d8282 *src/flatcc/flatcc_verifier.h
-e286dee5eb7d52175cee234bcd45da91 *src/flatcc/portable/flatcc_portable.h
 956e557e764ac8a6c71a0e609eee495e *src/flatcc/portable/paligned_alloc.h
 281ec08cfa98e996e4a97bc64810c2a5 *src/flatcc/portable/pattributes.h
 28d1e99d3f4d4538531c7e9a71465b51 *src/flatcc/portable/pdiagnostic.h
@@ -91,7 +90,7 @@ d5ef17803712998b54c62b90f9fd8074 *src/flatcc/portable/portable.h
 b316c5c45e405f14aaf803d17dcddbe3 *src/flatcc/portable/portable_basic.h
 5bb7911af7df2171e79bf916510776c0 *src/flatcc/portable/prestrict.h
 cb088d27f67e8655d7edeb93dd0a4c48 *src/flatcc/portable/pstatic_assert.h
-c8294e4e09c7c59aea3589b4c883d8c6 *src/flatcc/portable/pstdalign.h
+690ca910d867a4f808edfd2fcd088f61 *src/flatcc/portable/pstdalign.h
 a73f400b1ca2a9784ea6bcd8bd2b97a4 *src/flatcc/portable/pstdint.h
 bac178f7a1251a1c0db0f6f6958ad94b *src/flatcc/portable/punaligned.h
 a410c5f9028ba64d2c28fa73d267ddf2 *src/flatcc/portable/pversion.h

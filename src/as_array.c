@@ -46,12 +46,38 @@ static void call_as_nanoarrow_array(SEXP x_sexp, struct ArrowArray* array,
   UNPROTECT(3);
 }
 
+static SEXP call_storage_integer_for_decimal(SEXP x_sexp, int scale) {
+  SEXP scale_sexp = PROTECT(Rf_ScalarInteger(scale));
+  SEXP fun = PROTECT(Rf_install("storage_integer_for_decimal"));
+  SEXP call = PROTECT(Rf_lang3(fun, x_sexp, scale_sexp));
+  SEXP result = PROTECT(Rf_eval(call, nanoarrow_ns_pkg));
+  UNPROTECT(4);
+  return result;
+}
+
+static void as_decimal_array(SEXP x_sexp, struct ArrowArray* array, SEXP schema_xptr,
+                             struct ArrowSchemaView* schema_view,
+                             struct ArrowError* error);
+
 static void as_array_int(SEXP x_sexp, struct ArrowArray* array, SEXP schema_xptr,
                          struct ArrowSchemaView* schema_view, struct ArrowError* error) {
-  // Only consider the default create for now
-  if (schema_view->type != NANOARROW_TYPE_INT32) {
-    call_as_nanoarrow_array(x_sexp, array, schema_xptr, "as_nanoarrow_array_from_c");
-    return;
+  // Consider integer -> numeric types that are easy to implement
+  switch (schema_view->type) {
+    case NANOARROW_TYPE_DECIMAL32:
+    case NANOARROW_TYPE_DECIMAL64:
+    case NANOARROW_TYPE_DECIMAL128:
+    case NANOARROW_TYPE_DECIMAL256:
+      as_decimal_array(x_sexp, array, schema_xptr, schema_view, error);
+      return;
+    case NANOARROW_TYPE_DOUBLE:
+    case NANOARROW_TYPE_FLOAT:
+    case NANOARROW_TYPE_HALF_FLOAT:
+    case NANOARROW_TYPE_INT64:
+    case NANOARROW_TYPE_INT32:
+      break;
+    default:
+      call_as_nanoarrow_array(x_sexp, array, schema_xptr, "as_nanoarrow_array_from_c");
+      return;
   }
 
   // We don't consider altrep for now: we need an array of int32_t, and while we
@@ -60,13 +86,33 @@ static void as_array_int(SEXP x_sexp, struct ArrowArray* array, SEXP schema_xptr
   int* x_data = INTEGER(x_sexp);
   int64_t len = Rf_xlength(x_sexp);
 
-  int result = ArrowArrayInitFromType(array, NANOARROW_TYPE_INT32);
+  int result = ArrowArrayInitFromType(array, schema_view->type);
   if (result != NANOARROW_OK) {
     Rf_error("ArrowArrayInitFromType() failed");
   }
 
-  // Borrow the data buffer
-  buffer_borrowed(ArrowArrayBuffer(array, 1), x_data, len * sizeof(int32_t), x_sexp);
+  if (schema_view->type == NANOARROW_TYPE_INT32) {
+    // Zero-copy create: just borrow the data buffer
+    buffer_borrowed(ArrowArrayBuffer(array, 1), x_data, len * sizeof(int32_t), x_sexp);
+  } else {
+    // Otherwise, use the integer appender
+    result = ArrowArrayStartAppending(array);
+    if (result != NANOARROW_OK) {
+      Rf_error("ArrowArrayStartAppending() failed");
+    }
+
+    result = ArrowArrayReserve(array, len);
+    if (result != NANOARROW_OK) {
+      Rf_error("ArrowArrayReserve() failed");
+    }
+
+    for (int64_t i = 0; i < len; i++) {
+      result = ArrowArrayAppendInt(array, x_data[i]);
+      if (result != NANOARROW_OK) {
+        Rf_error("ArrowArrayAppendInt() failed");
+      }
+    }
+  }
 
   // Set the array fields
   array->length = len;
@@ -102,6 +148,7 @@ static void as_array_int(SEXP x_sexp, struct ArrowArray* array, SEXP schema_xptr
   }
 
   array->null_count = null_count;
+
   result = ArrowArrayFinishBuildingDefault(array, error);
   if (result != NANOARROW_OK) {
     Rf_error("ArrowArrayFinishBuildingDefault(): %s", error->message);
@@ -187,6 +234,12 @@ static void as_array_dbl(SEXP x_sexp, struct ArrowArray* array, SEXP schema_xptr
   // Consider double -> na_double() and double -> na_int64()/na_int32()
   // (mostly so that we can support date/time types with various units)
   switch (schema_view->type) {
+    case NANOARROW_TYPE_DECIMAL32:
+    case NANOARROW_TYPE_DECIMAL64:
+    case NANOARROW_TYPE_DECIMAL128:
+    case NANOARROW_TYPE_DECIMAL256:
+      as_decimal_array(x_sexp, array, schema_xptr, schema_view, error);
+      return;
     case NANOARROW_TYPE_DOUBLE:
     case NANOARROW_TYPE_FLOAT:
     case NANOARROW_TYPE_HALF_FLOAT:
@@ -312,6 +365,60 @@ static void as_array_dbl(SEXP x_sexp, struct ArrowArray* array, SEXP schema_xptr
   }
 
   array->null_count = null_count;
+  result = ArrowArrayFinishBuildingDefault(array, error);
+  if (result != NANOARROW_OK) {
+    Rf_error("ArrowArrayFinishBuildingDefault(): %s", error->message);
+  }
+}
+
+static void as_decimal_array(SEXP x_sexp, struct ArrowArray* array, SEXP schema_xptr,
+                             struct ArrowSchemaView* schema_view,
+                             struct ArrowError* error) {
+  // Use R to generate the input we need for ArrowDecimalSetDigits()
+  SEXP x_digits_sexp =
+      PROTECT(call_storage_integer_for_decimal(x_sexp, schema_view->decimal_scale));
+
+  struct ArrowDecimal item;
+  ArrowDecimalInit(&item, schema_view->decimal_bitwidth, schema_view->decimal_precision,
+                   schema_view->decimal_scale);
+
+  int result = ArrowArrayInitFromType(array, schema_view->type);
+  if (result != NANOARROW_OK) {
+    Rf_error("ArrowArrayInitFromType() failed");
+  }
+
+  result = ArrowArrayStartAppending(array);
+  if (result != NANOARROW_OK) {
+    Rf_error("ArrowArrayStartAppending() failed");
+  }
+
+  int64_t len = Rf_xlength(x_sexp);
+  result = ArrowArrayReserve(array, len);
+  if (result != NANOARROW_OK) {
+    Rf_error("ArrowArrayReserve() failed");
+  }
+
+  struct ArrowStringView item_digits_view;
+  for (int64_t i = 0; i < len; i++) {
+    SEXP item_sexp = STRING_ELT(x_digits_sexp, i);
+    if (item_sexp == NA_STRING) {
+      result = ArrowArrayAppendNull(array, 1);
+    } else {
+      item_digits_view.data = CHAR(item_sexp);
+      item_digits_view.size_bytes = Rf_length(item_sexp);
+      result = ArrowDecimalSetDigits(&item, item_digits_view);
+      if (result == NANOARROW_OK) {
+        result = ArrowArrayAppendDecimal(array, &item);
+      }
+    }
+
+    if (result != NANOARROW_OK) {
+      Rf_error("ArrowArrayAppendDecimal() or ArrowDecimalSetDigits() failed");
+    }
+  }
+
+  UNPROTECT(1);
+
   result = ArrowArrayFinishBuildingDefault(array, error);
   if (result != NANOARROW_OK) {
     Rf_error("ArrowArrayFinishBuildingDefault(): %s", error->message);

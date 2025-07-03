@@ -15,37 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#' @keywords internal
-"_PACKAGE"
+# -DFLATCC_USE_GENERIC_ALIGNED_ALLOC is needed to support compilation on systems
+# that do not provide aligned_alloc. Allocating flatbuffers memory is not
+# performance-critical for what we do in the nanoarrow R package (and may not
+# occur at all until IPC write support is added)
 
-## usethis namespace: start
-#' @importFrom utils getFromNamespace
-#' @useDynLib nanoarrow, .registration = TRUE
-## usethis namespace: end
-NULL
-
-#' Underlying 'nanoarrow' C library build
-#'
-#' @param runtime Compare TRUE and FALSE values to detect a
-#'   possible ABI mismatch.
-#'
-#' @return A string identifying the version of nanoarrow this package
-#'   was compiled against.
-#' @export
-#'
-#' @examples
-#' nanoarrow_version()
-#' nanoarrow_with_zstd()
-nanoarrow_version <- function(runtime = TRUE) {
-  if (runtime) {
-    .Call(nanoarrow_c_version_runtime)
-  } else {
-    .Call(nanoarrow_c_version)
-  }
-}
-
-#' @rdname nanoarrow_version
-#' @export
-nanoarrow_with_zstd <- function() {
-  .Call(nanoarrow_c_with_zstd)
-}
+PKG_CPPFLAGS=-I../inst/include -I../src -DFLATCC_USE_GENERIC_ALIGNED_ALLOC @cppflags@
+PKG_LIBS=@libs@

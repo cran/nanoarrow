@@ -15,37 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#' @keywords internal
-"_PACKAGE"
+# This Makevars handles R >= 4.2 on Windows (pkg-config is available on all such versions)
 
-## usethis namespace: start
-#' @importFrom utils getFromNamespace
-#' @useDynLib nanoarrow, .registration = TRUE
-## usethis namespace: end
-NULL
+ifeq (,$(shell pkg-config libzstd --libs 2>/dev/null))
+  ZSTD_CFLAGS =
+  ZSTD_LIB_FLAGS =
+else
+  ZSTD_CFLAGS = $(shell pkg-config --cflags libzstd) -DNANOARROW_IPC_WITH_ZSTD
+  ZSTD_LIB_FLAGS = $(shell pkg-config --libs libzstd)
+endif
 
-#' Underlying 'nanoarrow' C library build
-#'
-#' @param runtime Compare TRUE and FALSE values to detect a
-#'   possible ABI mismatch.
-#'
-#' @return A string identifying the version of nanoarrow this package
-#'   was compiled against.
-#' @export
-#'
-#' @examples
-#' nanoarrow_version()
-#' nanoarrow_with_zstd()
-nanoarrow_version <- function(runtime = TRUE) {
-  if (runtime) {
-    .Call(nanoarrow_c_version_runtime)
-  } else {
-    .Call(nanoarrow_c_version)
-  }
-}
-
-#' @rdname nanoarrow_version
-#' @export
-nanoarrow_with_zstd <- function() {
-  .Call(nanoarrow_c_with_zstd)
-}
+PKG_CPPFLAGS = -I../inst/include -I../src -DFLATCC_USE_GENERIC_ALIGNED_ALLOC $(ZSTD_CFLAGS)
+PKG_LIBS = $(ZSTD_LIB_FLAGS)

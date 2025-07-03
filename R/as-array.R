@@ -195,6 +195,42 @@ as_nanoarrow_array.blob <- function(x, ..., schema = NULL) {
 }
 
 #' @export
+as_nanoarrow_array.matrix <- function(x, ..., schema = NULL) {
+  if (is.null(schema)) {
+    schema <- infer_nanoarrow_schema(x)
+  } else {
+    schema <- as_nanoarrow_schema(schema)
+  }
+
+  expected_format <- paste0("+w:", ncol(x))
+  if (expected_format != schema$format) {
+    stop(
+      sprintf(
+        "Expected schema for matrix with fixed-size list of %d elements but got %s",
+        ncol(x),
+        nanoarrow_schema_formatted(schema)
+      )
+    )
+  }
+
+  # Raw unclass() doesn't work for matrix()
+  row_major_data <- t(x)
+  attributes(row_major_data) <- NULL
+
+  child_array <- as_nanoarrow_array(row_major_data, schema = schema$children[[1]])
+  array <- nanoarrow_array_init(schema)
+  nanoarrow_array_modify(
+    array,
+    list(
+      length = nrow(x),
+      null_count = 0,
+      buffers = list(NULL),
+      children = list(child_array)
+    )
+  )
+}
+
+#' @export
 as_nanoarrow_array.data.frame <- function(x, ..., schema = NULL) {
   # We need to override this to prevent the list implementation from handling it
   as_nanoarrow_array.default(x, ..., schema = schema)
@@ -262,8 +298,14 @@ as_nanoarrow_array.Date <- function(x, ..., schema = NULL) {
   switch(
     parsed$type,
     date32 = {
+      int_vec <- if (is.integer(x)) {
+        unclass(x)
+      } else {
+        as.integer(floor(as.numeric(x)))
+      }
+
       storage <- as_nanoarrow_array(
-        as.integer(x),
+        int_vec,
         schema = na_type(parsed$storage_type)
       )
       nanoarrow_array_set_schema(storage, schema)
@@ -432,4 +474,30 @@ as_nanoarrow_array_from_c <- function(x, schema) {
   nanoarrow_array_set_schema(result, schema, validate = TRUE)
 
   result
+}
+
+# Helper to allow us to use nanoarrow's string parser, which parses integers
+# to set decimal storage but not the slightly more useful case of parsing
+# things with decimal points yet.
+storage_integer_for_decimal <- function(numbers, scale) {
+  rounded_formatted <- storage_decimal_for_decimal(numbers, scale)
+  gsub(".", "", rounded_formatted, fixed = TRUE)
+}
+
+storage_decimal_for_decimal <- function(numbers, scale) {
+  if (scale > 0) {
+    rounded_formatted <- sprintf("%0.*f", scale, numbers)
+    rounded_formatted[is.na(numbers)] <- NA_character_
+  } else {
+    rounded <- round(numbers, scale)
+    is_zero <- !is.na(rounded) & rounded == 0
+    rounded_formatted <- as.character(rounded)
+    rounded_formatted[!is_zero] <- gsub(
+      paste0("0{", -scale, "}$"),
+      "",
+      rounded_formatted[!is_zero]
+    )
+  }
+
+  rounded_formatted
 }

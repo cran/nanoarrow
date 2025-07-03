@@ -68,6 +68,8 @@
 #'   be converted to [blob::blob()].
 #' - [vctrs::list_of()]: List, large list, and fixed-size list types can be
 #'   converted to [vctrs::list_of()].
+#' - [matrix()]: Fixed-size list types can be converted to
+#'   `matrix(ptype, ncol = fixed_size)`.
 #' - [data.frame()]: Struct types can be converted to [data.frame()].
 #' - [vctrs::unspecified()]: Any type can be converted to [vctrs::unspecified()];
 #'   however, a warning will be raised if any non-null values are encountered.
@@ -151,26 +153,6 @@ convert_array.nanoarrow_vctr <- function(array, to, ...) {
   }
 
   new_nanoarrow_vctr(list(array), schema, class(to))
-}
-
-#' @export
-convert_array.double <- function(array, to, ...) {
-  # Handle conversion from decimal128 via arrow
-  schema <- infer_nanoarrow_schema(array)
-  parsed <- nanoarrow_schema_parse(schema)
-  if (parsed$type == "decimal128") {
-    assert_arrow_installed(
-      sprintf(
-        "convert %s array to object of type double",
-        nanoarrow_schema_formatted(schema)
-      )
-    )
-
-    arrow_array <- as_arrow_array.nanoarrow_array(array)
-    arrow_array$as_vector()
-  } else {
-    NextMethod()
-  }
 }
 
 #' @export

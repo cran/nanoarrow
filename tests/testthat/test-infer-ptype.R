@@ -32,6 +32,8 @@ test_that("infer_nanoarrow_ptype() works on arrays, schemas, and streams", {
 })
 
 test_that("infer_nanoarrow_ptype() works for basic types", {
+  skip_if_not_installed("vctrs")
+
   expect_identical(
     infer_nanoarrow_ptype(as_nanoarrow_array(vctrs::unspecified())),
     vctrs::unspecified()
@@ -71,6 +73,8 @@ test_that("infer_nanoarrow_ptype() works for basic types", {
 })
 
 test_that("infer_nanoarrow_ptype() infers ptypes for date/time types", {
+  skip_if_not_installed("hms")
+
   array_date <- as_nanoarrow_array(as.Date("2000-01-01"))
   expect_identical(
     infer_nanoarrow_ptype(array_date),
@@ -100,6 +104,7 @@ test_that("infer_nanoarrow_ptype() infers ptypes for date/time types", {
 
 test_that("infer_nanoarrow_ptype() infers ptypes for nested types", {
   skip_if_not_installed("arrow")
+  skip_if_not_installed("vctrs")
 
   array_list <- as_nanoarrow_array(vctrs::list_of(integer()))
   expect_identical(
@@ -120,17 +125,17 @@ test_that("infer_nanoarrow_ptype() infers ptypes for nested types", {
 })
 
 test_that("infer_nanoarrow_ptype() errors for types it can't infer",  {
-  unsupported_array <- nanoarrow_array_init(na_decimal256(3, 4))
+  unsupported_array <- nanoarrow_array_init(na_list_view(na_int32()))
   expect_error(
     infer_nanoarrow_ptype(as_nanoarrow_array(unsupported_array)),
-    "Can't infer R vector type for <decimal256\\(3, 4\\)>"
+    "Can't infer R vector type for <list_view<item: int32>>"
   )
 
   unsupported_struct <- nanoarrow_array_init(
-    na_struct(list(col = na_decimal256(3, 4)))
+    na_struct(list(col = na_list_view(na_int32())))
   )
   expect_error(
     infer_nanoarrow_ptype(as_nanoarrow_array(unsupported_struct)),
-    "Can't infer R vector type for `col` <decimal256\\(3, 4\\)>"
+    "Can't infer R vector type for `col` <list_view<item: int32>>"
   )
 })

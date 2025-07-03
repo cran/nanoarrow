@@ -80,6 +80,8 @@ test_that("convert to vector works for data.frame", {
 })
 
 test_that("convert to vector works for partial_frame", {
+  skip_if_not_installed("vctrs")
+
   array <- as_nanoarrow_array(
     data.frame(a = 1L, b = "two", stringsAsFactors = FALSE)
   )
@@ -115,6 +117,8 @@ test_that("convert to vector works for dictionary<struct> -> data.frame()", {
 })
 
 test_that("convert to vector works for function()", {
+  skip_if_not_installed("tibble")
+
   tibble_or_bust <- function(array, ptype) {
     if (is.data.frame(ptype)) {
       ptype <- tibble::as_tibble(ptype)
@@ -135,6 +139,8 @@ test_that("convert to vector works for function()", {
 })
 
 test_that("convert to vector works for tibble", {
+  skip_if_not_installed("tibble")
+
   array <- as_nanoarrow_array(
     data.frame(a = 1L, b = "two", stringsAsFactors = FALSE)
   )
@@ -293,6 +299,8 @@ test_that("convert to vector works for struct-style vectors", {
 })
 
 test_that("convert to vector works for unspecified()", {
+  skip_if_not_installed("vctrs")
+
   array <- nanoarrow_array_init(na_na())
   array$length <- 10
   array$null_count <- 10
@@ -605,22 +613,31 @@ test_that("convert to vector works for valid double()", {
   )
 })
 
-test_that("convert to vector works for decimal128 -> double()", {
+test_that("convert to vector works for decimal -> double()", {
+  constructors <- list(na_decimal32, na_decimal64, na_decimal256, na_decimal128)
+  for (constructor in constructors) {
+    numbers <- round(c(pi, -pi, 123.4567, NA, -123.4567, 0, 123), 4)
+
+    # Check scale of 4 (min required for lossless roundtrip)
+    array4 <- as_nanoarrow_array(numbers, schema = constructor(9, 4))
+    expect_identical(convert_array(array4), numbers)
+
+    # Check scale of 5 (requires adding some zeroes in C)
+    array5 <- as_nanoarrow_array(numbers, schema = constructor(9, 5))
+    expect_identical(convert_array(array5), numbers)
+
+    # Check negative scale (also requires adding some zeroes in C)
+    numbers_neg_scale <- c(12300, -12300, 0, NA, 100)
+    array_neg2 <- as_nanoarrow_array(numbers_neg_scale, schema = constructor(9, -2))
+    expect_identical(convert_array(array_neg2), numbers_neg_scale)
+  }
+
+  # Make sure we agree with arrow
   skip_if_not_installed("arrow")
 
-  array <- as_nanoarrow_array(arrow::Array$create(1:10)$cast(arrow::decimal128(20, 10)))
-
-  # Check via S3 dispatch
-  expect_equal(
-    convert_array(array, double()),
-    as.double(1:10)
-  )
-
-  # ...and via C -> S3 dispatch
-  expect_equal(
-    convert_array.default(array, double()),
-    as.double(1:10)
-  )
+  expect_identical(as.vector(arrow::as_arrow_array(array4)), numbers)
+  expect_identical(as.vector(arrow::as_arrow_array(array5)), numbers)
+  expect_identical(as.vector(arrow::as_arrow_array(array_neg2)), numbers_neg_scale)
 })
 
 test_that("convert to vector works for null -> double()", {
@@ -864,6 +881,37 @@ test_that("convert to vector works for dictionary<string> -> factor()", {
   )
 })
 
+test_that("convert to vector works for decimal -> character()", {
+  constructors <- list(na_decimal32, na_decimal64, na_decimal256, na_decimal128)
+  for (constructor in constructors) {
+    numbers <- round(c(pi, -pi, 123.4567, NA, -123.4567, 0, 123), 4)
+
+    # Check scale of 4 (min required for lossless roundtrip)
+    array4 <- as_nanoarrow_array(numbers, schema = constructor(9, 4))
+    expect_identical(
+      convert_array(array4, character()),
+      c("3.1416", "-3.1416", "123.4567", NA_character_,
+        "-123.4567", "0.0000", "123.0000")
+    )
+
+    # Check scale of 5 (requires adding some zeroes in C)
+    array5 <- as_nanoarrow_array(numbers, schema = constructor(9, 5))
+    expect_identical(
+      convert_array(array5, character()),
+      c("3.14160", "-3.14160", "123.45670", NA_character_,
+        "-123.45670", "0.00000", "123.00000")
+    )
+
+    # Check negative scale (also requires adding some zeroes in C)
+    numbers_neg_scale <- c(12300, -12300, 0, NA, 100)
+    array_neg2 <- as_nanoarrow_array(numbers_neg_scale, schema = constructor(9, -2))
+    expect_identical(
+      convert_array(array_neg2, character()),
+      c("12300", "-12300", "000", NA_character_, "100")
+    )
+  }
+})
+
 test_that("batched convert to vector works for dictionary<string> -> factor()", {
   # A slightly different path: convert_array.factor() called from C multiple
   # times with different dictionaries each time.
@@ -925,6 +973,8 @@ test_that("convert to vector works for binary_view -> blob::blob()", {
 })
 
 test_that("convert to vector works for null -> blob::blob()", {
+  skip_if_not_installed("blob")
+
   array <- nanoarrow_array_init(na_na())
   array$length <- 10
   array$null_count <- 10
@@ -937,6 +987,7 @@ test_that("convert to vector works for null -> blob::blob()", {
 
 test_that("convert to vector works for list -> vctrs::list_of", {
   skip_if_not_installed("arrow")
+  skip_if_not_installed("vctrs")
 
   array_list <- as_nanoarrow_array(
     arrow::Array$create(
@@ -974,6 +1025,7 @@ test_that("convert to vector works for list -> vctrs::list_of", {
 
 test_that("convert to vector works for large_list -> vctrs::list_of", {
   skip_if_not_installed("arrow")
+  skip_if_not_installed("vctrs")
 
   array_list <- as_nanoarrow_array(
     arrow::Array$create(
@@ -1003,6 +1055,7 @@ test_that("convert to vector works for large_list -> vctrs::list_of", {
 
 test_that("convert to vector works for fixed_size_list -> vctrs::list_of", {
   skip_if_not_installed("arrow")
+  skip_if_not_installed("vctrs")
 
   array_list <- as_nanoarrow_array(
     arrow::Array$create(
@@ -1031,6 +1084,8 @@ test_that("convert to vector works for fixed_size_list -> vctrs::list_of", {
 })
 
 test_that("convert to vector works for null -> vctrs::list_of()", {
+  skip_if_not_installed("vctrs")
+
   array <- nanoarrow_array_init(na_na())
   array$length <- 10
   array$null_count <- 10
@@ -1038,6 +1093,31 @@ test_that("convert to vector works for null -> vctrs::list_of()", {
   expect_identical(
     convert_array(array, vctrs::list_of(.ptype = integer())),
     vctrs::new_list_of(rep(list(NULL), 10), ptype = integer())
+  )
+})
+
+test_that("convert to vector works for fixed_size_list_of() -> matrix()", {
+  mat <- matrix(1:6, ncol = 2, byrow = TRUE)
+  array <- as_nanoarrow_array(mat)
+
+  expect_identical(
+    convert_array(array, matrix(double(), ncol = 2)),
+    matrix(as.double(1:6), ncol = 2, byrow = TRUE)
+  )
+})
+
+test_that("convert to vector errors for invalid matrix()", {
+  expect_error(
+    convert_array(as_nanoarrow_array(1:6), matrix()),
+    "Can't convert array <int32> to R vector of type matrix"
+  )
+
+  mat <- matrix(1:6, ncol = 2, byrow = TRUE)
+  array <- as_nanoarrow_array(mat)
+  expect_error(
+    convert_array(array, matrix(integer(), ncol = 3)),
+    "Can't convert fixed_size_list(list_size=2) to matrix with 3 cols",
+    fixed = TRUE
   )
 })
 
@@ -1070,6 +1150,8 @@ test_that("convert to vector works for null -> Date", {
 })
 
 test_that("convert to vector works for hms", {
+  skip_if_not_installed("hms")
+
   array_time <- as_nanoarrow_array(hms::parse_hm("12:34"))
   expect_identical(
     convert_array(array_time),
@@ -1078,6 +1160,8 @@ test_that("convert to vector works for hms", {
 })
 
 test_that("convert to vector works for null -> hms", {
+  skip_if_not_installed("hms")
+
   array <- nanoarrow_array_init(na_na())
   array$length <- 10
   array$null_count <- 10
@@ -1192,6 +1276,7 @@ test_that("convert to vector works for null -> difftime", {
 
 test_that("convert to vector works for data frames nested inside lists", {
   skip_if_not_installed("arrow")
+  skip_if_not_installed("vctrs")
 
   df_in_list <- vctrs::list_of(
     data.frame(x = 1:5),
@@ -1208,6 +1293,7 @@ test_that("convert to vector works for data frames nested inside lists", {
 
 test_that("convert to vector works for lists nested in data frames", {
   skip_if_not_installed("arrow")
+  skip_if_not_installed("vctrs")
 
   df_in_list_in_df <- data.frame(
     x = vctrs::list_of(

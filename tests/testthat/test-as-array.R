@@ -111,10 +111,26 @@ test_that("as_nanoarrow_array() works for integer() -> na_int32()", {
 })
 
 test_that("as_nanoarrow_array() works for integer -> na_int64()", {
-  skip_if_not_installed("arrow")
   casted <- as_nanoarrow_array(1:10, schema = na_int64())
   expect_identical(infer_nanoarrow_schema(casted)$format, "l")
   expect_identical(convert_array(casted), as.double(1:10))
+})
+
+test_that("as_nanoarrow_array() works for integer -> na_decimal_xxx()", {
+  numbers <- c(1234L, 56L, NA, -10:10)
+  schemas <- list(
+    na_decimal32(9, 3),
+    na_decimal64(9, 3),
+    na_decimal128(9, 3),
+    na_decimal256(9, 3)
+  )
+
+  for (schema in schemas) {
+    array <- as_nanoarrow_array(numbers, schema = schema)
+    actual_schema <- infer_nanoarrow_schema(array)
+    expect_true(nanoarrow_schema_identical(actual_schema, schema))
+    expect_identical(convert_array(array), as.double(numbers))
+  }
 })
 
 test_that("as_nanoarrow_array() works for double() -> na_double()", {
@@ -235,6 +251,27 @@ test_that("as_nanoarrow_array() works for double() -> na_half_float()", {
     packBits(c(rep(TRUE, 10), FALSE, rep(FALSE, 5)))
   )
   expect_identical(convert_array(array), c(1:10, NA_real_))
+})
+
+
+test_that("as_nanoarrow_array() works for double() -> na_decimal128()", {
+  # Tricky to check the actual buffers here, so just check against arrow
+  skip_if_not_installed("arrow")
+
+  numbers <- round(c(pi, -pi, 123.4567, NA, -123.4567, 0, 123), 4)
+  numbers_neg_scale <- c(12300, -12300, 0, NA, 100)
+
+  array4 <- as_nanoarrow_array(numbers, schema = na_decimal128(9, 4))
+  array5 <- as_nanoarrow_array(numbers, schema = na_decimal128(9, 5))
+  array_neg2 <- as_nanoarrow_array(numbers_neg_scale, schema = na_decimal128(9, -2))
+
+  arrow_array4 <- arrow::as_arrow_array(numbers, type = arrow::decimal128(9, 4))
+  arrow_array5 <- arrow::as_arrow_array(numbers, type = arrow::decimal128(9, 5))
+  arrow_array_neg2 <- arrow::as_arrow_array(numbers_neg_scale, type = arrow::decimal128(9, -2))
+
+  expect_true(arrow_array4$Equals(arrow::as_arrow_array(array4)))
+  expect_true(arrow_array5$Equals(arrow::as_arrow_array(array5)))
+  expect_true(arrow_array_neg2$Equals(arrow::as_arrow_array(array_neg2)))
 })
 
 test_that("as_nanoarrow_array() works for integer64() -> na_int32()", {
@@ -466,6 +503,17 @@ test_that("as_nanoarrow_array() works for Date -> na_date32()", {
     as.raw(array$buffers[[2]]),
     as.raw(as_nanoarrow_buffer(c(10957L, 19391L, NA)))
   )
+
+  # Sub-day precision handling
+  expect_identical(
+    as.vector(as_nanoarrow_array(as.Date(c(-0.5, 0, 0.5), origin = as.Date("1970-01-01")))),
+    as.Date(c(-1, 0, 0), origin = as.Date("1970-01-01"))
+  )
+  # Integer based Date support
+  expect_identical(
+    as.vector(as_nanoarrow_array(as.Date(c(-1L, 0L, 1L), origin = as.Date("1970-01-01")))),
+    as.Date(c(-1, 0, 1), origin = as.Date("1970-01-01"))
+  )
 })
 
 test_that("as_nanoarrow_array() works for Date -> na_date64()", {
@@ -573,7 +621,30 @@ test_that("as_nanoarrow_array() works for blob::blob() -> na_binary()", {
   )
 })
 
+test_that("as_nanoarrow_array() works for matrix -> na_fixed_size_list()", {
+  mat <- matrix(1:6, ncol = 2, byrow = TRUE)
+
+  # Check without explicit schema
+  array <- as_nanoarrow_array(mat)
+  expect_identical(infer_nanoarrow_schema(array)$format, "+w:2")
+  expect_identical(infer_nanoarrow_schema(array)$children[[1]]$format, "i")
+  expect_identical(array$buffers[[1]]$size_bytes, 0)
+  expect_identical(convert_buffer(array$children[[1]]$buffers[[2]]), 1:6)
+
+  # Check with explicit schema
+  array <- as_nanoarrow_array(
+    mat,
+    schema = na_fixed_size_list(na_double(), list_size = 2)
+  )
+  expect_identical(infer_nanoarrow_schema(array)$format, "+w:2")
+  expect_identical(infer_nanoarrow_schema(array)$children[[1]]$format, "g")
+  expect_identical(array$buffers[[1]]$size_bytes, 0)
+  expect_identical(convert_buffer(array$children[[1]]$buffers[[2]]), as.double(1:6))
+})
+
 test_that("as_nanoarrow_array() works for blob::blob() -> na_fixed_size_binary()", {
+  skip_if_not_installed("blob")
+
   # Without nulls
   array <- as_nanoarrow_array(blob::as_blob(letters), schema = na_fixed_size_binary(1))
   expect_identical(infer_nanoarrow_schema(array)$format, "w:1")
@@ -603,6 +674,8 @@ test_that("as_nanoarrow_array() works for blob::blob() -> na_fixed_size_binary()
 })
 
 test_that("as_nanoarrow_array() works for blob::blob() -> na_large_binary()", {
+  skip_if_not_installed("blob")
+
   # Without nulls
   array <- as_nanoarrow_array(blob::as_blob(letters), schema = na_large_binary())
   expect_identical(infer_nanoarrow_schema(array)$format, "Z")
@@ -632,6 +705,8 @@ test_that("as_nanoarrow_array() works for blob::blob() -> na_large_binary()", {
 })
 
 test_that("as_nanoarrow_array() works for blob::blob() -> na_binary_view()", {
+  skip_if_not_installed("blob")
+
   # Without nulls
   array <- as_nanoarrow_array(blob::as_blob(letters), schema = na_binary_view())
   expect_identical(infer_nanoarrow_schema(array)$format, "vz")
@@ -824,4 +899,66 @@ test_that("as_nanoarrow_array() for union type errors for unsupported objects", 
     as_nanoarrow_array(data.frame(), schema = na_dense_union()),
     "Can't convert data frame with 0 columns"
   )
+})
+
+test_that("storage_integer_for_decimal generates the correct string output", {
+  numbers <- c(
+    0, 1.23, 4, -1/3, .Machine$double.eps,
+    123.4567890, -123.4567890, NA
+  )
+
+  expect_identical(
+    storage_decimal_for_decimal(numbers, 4),
+    c(
+      "0.0000", "1.2300", "4.0000", "-0.3333", "0.0000",
+      "123.4568", "-123.4568", NA
+    )
+  )
+
+  expect_identical(
+    storage_decimal_for_decimal(numbers, 0),
+    c(
+      "0", "1", "4", "0", "0",
+      "123", "-123", NA
+    )
+  )
+
+  expect_identical(
+    storage_decimal_for_decimal(numbers, -1),
+    c(
+      "0", "0", "0", "0", "0",
+      "12", "-12", NA
+    )
+  )
+
+  expect_identical(
+    storage_integer_for_decimal(numbers, 4),
+    c(
+      "00000", "12300", "40000", "-03333", "00000",
+      "1234568", "-1234568", NA
+    )
+  )
+
+  # Check that we're generating the output we think we're generating
+  # with a random sample of numbers at full precision and a random sample
+  # of numbers at low precision.
+  withr::with_seed(4958, {
+    numbers <- runif(1000, -1000, 1000)
+    for (scale in 1:15) {
+      expect_match(
+        storage_decimal_for_decimal(numbers, scale),
+        paste0("-?[0-9]+\\.[0-9]{", scale, "}")
+      )
+    }
+
+    # Also check that we have the required number of digits after the decimal
+    # when the numbers start out not having no digits after the decimal
+    numbers <- round(numbers)
+    for (scale in 1:15) {
+      expect_match(
+        storage_decimal_for_decimal(numbers, scale),
+        paste0("-?[0-9]+\\.[0-9]{", scale, "}")
+      )
+    }
+  })
 })

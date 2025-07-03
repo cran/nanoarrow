@@ -17,6 +17,15 @@
   under the License.
 -->
 
+# nanoarrow 0.7.0
+
+- Add zstd decompression support to R package (#733)
+- Support native creation of more numeric Arrow arrays from integer vectors (#697)
+- Support matrix objects as fixed-size-list arrays (#692)
+- Ensure that `python` is used on Windows when running bootstrap.R (#792)
+- Update vctrs extension name to reflect implementation change (#752)
+- sub-day precision Date should be floored when treated as integer (#674)
+
 # nanoarrow 0.6.0
 
 - Add float16 support for R bindings (#650)

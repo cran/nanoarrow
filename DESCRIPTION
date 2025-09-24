@@ -1,6 +1,6 @@
 Package: nanoarrow
 Title: Interface to the 'nanoarrow' 'C' Library
-Version: 0.7.0
+Version: 0.7.0-1
 Authors@R: c(
     person(given = "Dewey",
            family = "Dunnington",
@@ -28,11 +28,11 @@ SystemRequirements: libzstd (optional)
 Config/testthat/edition: 3
 Config/build/bootstrap: TRUE
 NeedsCompilation: yes
-Packaged: 2025-07-03 17:18:16 UTC; dewey
+Packaged: 2025-09-24 14:14:21 UTC; dewey
 Author: Dewey Dunnington [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-9415-4582>),
   Apache Arrow [aut, cph],
   Apache Software Foundation [cph]
 Maintainer: Dewey Dunnington <dewey@dunnington.ca>
 Repository: CRAN
-Date/Publication: 2025-07-03 18:00:02 UTC
+Date/Publication: 2025-09-24 15:10:02 UTC

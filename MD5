@@ -1,4 +1,4 @@
-118f2a3cd3b8a288c3631d3aed820866 *DESCRIPTION
+147fba1df3c97e4ee2e763dbf6d4f740 *DESCRIPTION
 8aeca61fb5d1a601a08de740b0868975 *NAMESPACE
 f1ec38aacaef0a1bd0c7085b06c9134c *NEWS.md
 3f4b9900b02b437eb56d26cbf22466fc *R/altrep.R
@@ -7,7 +7,7 @@ da959399c29340892a633c8f6a9b4653 *R/array-stream.R
 7f7169de0f871e4cc9ba2bebf1287d67 *R/as-array.R
 ca28b096768f9d6eeeae470d74ce8827 *R/buffer.R
 5dfde2e8099afe812764b20250530f9c *R/convert-array-stream.R
-64e2d032707c1fcdad8239879ccb0858 *R/convert-array.R
+cca9d4b351ac9e6010b214606ba4a967 *R/convert-array.R
 f94a194f6b8cc0602565d2629c7c8d0a *R/extension-vctrs.R
 6b1b3eaea0f7a82a9d3f0630d4467eb7 *R/extension.R
 95055f8c97fa85b44246f05499512c05 *R/infer-ptype.R
@@ -132,13 +132,13 @@ ce90b02424cadc66f5f5982fc4d94a48 *tests/testthat/_snaps/array-stream.md
 69c690c8ab8b48c1879dab9ef0f3706a *tests/testthat/_snaps/array.md
 669744f5bd7def919393275a0fa8fa14 *tests/testthat/_snaps/as-array.md
 f2c5d83f8438efc31525d1cf49292981 *tests/testthat/_snaps/buffer.md
-e6cdcf431dbc0b165eb800273c467bf1 *tests/testthat/test-altrep.R
+dd4495344c06f2639c56b653075fbc2b *tests/testthat/test-altrep.R
 4fa42c0f13b89d379eeb3e691e7ae05c *tests/testthat/test-array-stream.R
 da6e5bbdf8c7f7dcf9aadc3658122d36 *tests/testthat/test-array.R
 f0353fa7a8465432164312d73a920b10 *tests/testthat/test-as-array.R
 669a82d25bb5078d8912845da297785a *tests/testthat/test-buffer.R
 610dd0e0ea1fc65b6822344756f628fd *tests/testthat/test-convert-array-stream.R
-1709f24e1fd2bf6b3fed9d84a1d5548c *tests/testthat/test-convert-array.R
+914ee8bd571bd80a2bc76505ed0b377e *tests/testthat/test-convert-array.R
 f7c4bc64b3d97251858856454eea7a2f *tests/testthat/test-extension-vctrs.R
 1dc05421ee22beaa32d2495d615dd211 *tests/testthat/test-extension.R
 5fc93860b0b1d70a7a2e8f943c5c8c35 *tests/testthat/test-infer-ptype.R
